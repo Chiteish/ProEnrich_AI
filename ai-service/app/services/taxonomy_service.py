@@ -1,50 +1,78 @@
-ATTRIBUTE_REQUIREMENTS = {
-    "sanding belts": [
-        "Abrasive Material",
-        "Grit",
-        "Backing Material",
-        "Width",
-        "Length"
-    ],
-
-    "faucets": [
-        "Material",
-        "Finish",
-        "Mounting Type",
-        "Flow Rate",
-        "Connection Type"
-    ],
-
-    "valves": [
-        "Material",
-        "Valve Type",
-        "Connection Type",
-        "Pressure Rating",
-        "Temperature Rating"
-    ]
-}
+from pathlib import Path
+import pandas as pd
 
 
-def find_missing_attributes(
-    product_type: str | None,
-    extracted_attributes: list[dict]
-):
+class TaxonomyService:
 
-    if not product_type:
+    def __init__(self, taxonomy_file: Path):
+
+        self.taxonomy_file = taxonomy_file
+
+        if taxonomy_file.exists():
+            self.df = pd.read_csv(
+                taxonomy_file
+            )
+        else:
+            self.df = pd.DataFrame()
+
+    def get_taxonomy(self):
+
+        if self.df.empty:
+            return []
+
+        return self.df.to_dict(
+            orient="records"
+        )
+
+    def get_required_attributes(
+        self,
+        product_class: str | None
+    ):
+
+        # Day-3 baseline.
+        # Replace this with the company's
+        # actual attribute master when available.
+
+        if not product_class:
+            return []
+
         return []
+    
+class AttributeRequirementService:
 
-    required = ATTRIBUTE_REQUIREMENTS.get(
-        product_type.lower(),
-        []
-    )
+    def __init__(self):
 
-    extracted_labels = {
-        item["label"].lower()
-        for item in extracted_attributes
-    }
+        self.requirements = {}
 
-    return [
-        attribute
-        for attribute in required
-        if attribute.lower() not in extracted_labels
-    ]
+    def set_requirements(
+        self,
+        requirements: dict
+    ):
+
+        self.requirements = requirements
+
+    def find_missing(
+        self,
+        product_class: str | None,
+        extracted_attributes: list[dict]
+    ):
+
+        if not product_class:
+            return []
+
+        required = self.requirements.get(
+            product_class,
+            []
+        )
+
+        existing = {
+            attribute["label"].lower()
+            for attribute in extracted_attributes
+        }
+
+        return [
+            attribute
+            for attribute in required
+            if attribute.lower()
+            not in existing
+        ]

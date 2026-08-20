@@ -9,9 +9,23 @@ from app.services.product_service import (
     ProductService
 )
 
+from app.services.taxonomy_service import (
+    TaxonomyService
+)
+
 from app.agents.product_understanding import (
     ProductUnderstandingAgent
 )
+
+from app.agents.classification_agent import (
+    ClassificationAgent
+)
+
+from app.agents.attribute_extraction import (
+    AttributeExtractionAgent
+)
+
+from app.config import DATA_DIR
 
 
 router = APIRouter(
@@ -26,6 +40,19 @@ understanding_agent = (
     ProductUnderstandingAgent()
 )
 
+attribute_agent = (
+    AttributeExtractionAgent()
+)
+
+
+taxonomy_service = TaxonomyService(
+    DATA_DIR / "taxonomy.csv"
+)
+
+classification_agent = ClassificationAgent(
+    taxonomy_service.get_taxonomy()
+)
+
 
 @router.post(
     "/process-product",
@@ -35,22 +62,15 @@ async def process_product(
     product: ProductRequest
 ):
 
-    # -------------------------
-    # 1. Resolve manufacturer
-    # -------------------------
+    # -----------------------------
+    # Identity
+    # -----------------------------
 
     manufacturer = (
         product_service.resolve_manufacturer(
             product.part_manuf
         )
     )
-
-    # -------------------------
-    # 2. Resolve brand
-    # -------------------------
-
-    # Priority:
-    # E1 → Unilog → DIB
 
     raw_brand = (
         product.e1_brand
@@ -64,9 +84,9 @@ async def process_product(
         )
     )
 
-    # -------------------------
-    # 3. Product understanding
-    # -------------------------
+    # -----------------------------
+    # Product understanding
+    # -----------------------------
 
     understanding = (
         understanding_agent.analyze(
@@ -75,15 +95,38 @@ async def process_product(
         )
     )
 
-    # -------------------------
-    # 4. Return intermediate
-    # -------------------------
+    # -----------------------------
+    # Classification
+    # -----------------------------
+
+    classification = (
+        classification_agent.classify(
+            product.part_desc,
+            understanding["product_type"]
+        )
+    )
+
+    # -----------------------------
+    # Attribute extraction
+    # -----------------------------
+
+    attributes = (
+        attribute_agent.extract(
+            product.part_desc
+        )
+    )
+
+    # -----------------------------
+    # Response
+    # -----------------------------
 
     return {
+
         "product_id":
             product.mfg_part_num,
 
         "identity": {
+
             "mpn":
                 product.mfg_part_num,
 
@@ -97,9 +140,14 @@ async def process_product(
         "understanding":
             understanding,
 
-        "attributes": [],
+        "classification":
+            classification,
 
-        "missing_attributes": [],
+        "attributes":
+            attributes,
+
+        "missing_attributes":
+            [],
 
         "processing_status":
             "completed"

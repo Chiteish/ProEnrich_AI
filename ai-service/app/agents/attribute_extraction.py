@@ -3,48 +3,99 @@ import re
 
 class AttributeExtractionAgent:
 
-    def extract(self, description: str):
+    def extract(
+        self,
+        description: str
+    ):
 
-        text = description or ""
+        if not description:
+            return []
 
         attributes = []
 
-        # Dimensions
-        dimensions = re.findall(
-            r"\b\d+(?:\.\d+)?\s*(?:in|inch|inches|mm|cm|ft)\b",
+        attributes.extend(
+            self._extract_dimensions(
+                description
+            )
+        )
+
+        attributes.extend(
+            self._extract_quantity(
+                description
+            )
+        )
+
+        attributes.extend(
+            self._extract_material(
+                description
+            )
+        )
+
+        return attributes
+
+    def _extract_dimensions(
+        self,
+        text: str
+    ):
+
+        pattern = (
+            r"\b\d+(?:\.\d+)?\s*"
+            r"(?:in|inch|inches|mm|cm|ft)\b"
+        )
+
+        matches = re.findall(
+            pattern,
             text.lower()
         )
 
-        if dimensions:
-            attributes.append({
-                "label": "Dimension",
-                "value": ", ".join(dimensions),
-                "confidence": 0.90,
-                "source": "input"
-            })
+        if not matches:
+            return []
 
-        # Quantity
-        quantity = re.search(
-            r"\b(\d+)\s*(?:pc|pcs|piece|pieces|pack)\b",
+        return [{
+            "label": "Dimension",
+            "value": ", ".join(matches),
+            "confidence": 0.90,
+            "source": "input"
+        }]
+
+    def _extract_quantity(
+        self,
+        text: str
+    ):
+
+        pattern = (
+            r"\b(\d+)\s*"
+            r"(?:pc|pcs|piece|pieces|pack)\b"
+        )
+
+        match = re.search(
+            pattern,
             text.lower()
         )
 
-        if quantity:
-            attributes.append({
-                "label": "Pack Quantity",
-                "value": quantity.group(1),
-                "confidence": 0.95,
-                "source": "input"
-            })
+        if not match:
+            return []
 
-        # Material
+        return [{
+            "label": "Pack Quantity",
+            "value": match.group(1),
+            "confidence": 0.95,
+            "source": "input"
+        }]
+
+    def _extract_material(
+        self,
+        text: str
+    ):
+
         materials = [
             "stainless steel",
+            "carbon steel",
             "aluminum",
             "brass",
             "steel",
             "plastic",
-            "carbon steel"
+            "rubber"
         ]
 
         lower = text.lower()
@@ -52,11 +103,12 @@ class AttributeExtractionAgent:
         for material in materials:
 
             if material in lower:
-                attributes.append({
+
+                return [{
                     "label": "Material",
                     "value": material.title(),
                     "confidence": 0.90,
                     "source": "input"
-                })
+                }]
 
-        return attributes
+        return []

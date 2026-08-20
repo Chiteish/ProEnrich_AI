@@ -5,20 +5,15 @@ from pydantic import BaseModel, Field
 class EntityMatch(BaseModel):
 
     raw_value: Optional[str] = None
-
     canonical_value: Optional[str] = None
-
     confidence: float = 0.0
-
     method: str
 
 
 class ProductIdentity(BaseModel):
 
     mpn: str
-
     manufacturer: EntityMatch
-
     brand: EntityMatch
 
 
@@ -37,6 +32,21 @@ class ProductUnderstanding(BaseModel):
     )
 
 
+class ClassificationResult(BaseModel):
+
+    department: Optional[str] = None
+
+    class_name: Optional[str] = None
+
+    fine: Optional[str] = None
+
+    classpath: Optional[str] = None
+
+    confidence: float = 0.0
+
+    method: str
+
+
 class ProductProcessResponse(BaseModel):
 
     product_id: str
@@ -44,6 +54,8 @@ class ProductProcessResponse(BaseModel):
     identity: ProductIdentity
 
     understanding: ProductUnderstanding
+
+    classification: ClassificationResult
 
     attributes: list[dict] = Field(
         default_factory=list
