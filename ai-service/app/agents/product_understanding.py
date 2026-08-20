@@ -3,59 +3,106 @@ import re
 
 class ProductUnderstandingAgent:
 
-    def analyze(self, part_number: str, description: str):
+    def analyze(
+        self,
+        part_number: str,
+        description: str
+    ):
 
         text = description or ""
-
-        result = {
-            "product_type": None,
-            "dimensions": [],
-            "quantity": None,
-            "keywords": []
-        }
-
         lower = text.lower()
 
-        # Product type heuristics
+        product_type = self._detect_product_type(
+            lower
+        )
+
+        dimensions = self._extract_dimensions(
+            lower
+        )
+
+        quantity = self._extract_quantity(
+            lower
+        )
+
+        return {
+            "product_type": product_type,
+            "dimensions": dimensions,
+            "quantity": quantity,
+            "keywords": self._extract_keywords(
+                lower
+            )
+        }
+
+    def _detect_product_type(
+        self,
+        text: str
+    ):
+
         product_types = [
             "sanding belt",
             "drill bit",
-            "valve",
-            "faucet",
             "saw blade",
             "grinding wheel",
+            "faucet",
+            "valve",
             "bearing",
             "motor",
-            "switch"
+            "switch",
+            "pipe fitting"
         ]
 
         for product_type in product_types:
-            if product_type in lower:
-                result["product_type"] = product_type
-                break
 
-        # Dimensions
-        dimensions = re.findall(
-            r"\b\d+(?:\.\d+)?\s*(?:in|inch|inches|mm|cm|ft)\b",
-            lower
+            if product_type in text:
+                return product_type
+
+        return None
+
+    def _extract_dimensions(
+        self,
+        text: str
+    ):
+
+        pattern = (
+            r"\b\d+(?:\.\d+)?\s*"
+            r"(?:in|inch|inches|mm|cm|ft)\b"
         )
 
-        result["dimensions"] = dimensions
-
-        # Quantity
-        quantity = re.search(
-            r"\b(\d+)\s*(?:pc|pcs|piece|pieces|pack)\b",
-            lower
+        return re.findall(
+            pattern,
+            text
         )
 
-        if quantity:
-            result["quantity"] = int(quantity.group(1))
+    def _extract_quantity(
+        self,
+        text: str
+    ):
 
-        result["keywords"] = [
-            word for word in re.findall(
-                r"\b[a-zA-Z]{3,}\b",
-                lower
-            )
-        ][:20]
+        pattern = (
+            r"\b(\d+)\s*"
+            r"(?:pc|pcs|piece|pieces|pack)\b"
+        )
 
-        return result
+        match = re.search(
+            pattern,
+            text
+        )
+
+        if match:
+            return int(match.group(1))
+
+        return None
+
+    def _extract_keywords(
+        self,
+        text: str
+    ):
+
+        words = re.findall(
+            r"\b[a-zA-Z]{3,}\b",
+            text
+        )
+
+        return list(
+            dict.fromkeys(words)
+        )[:20]

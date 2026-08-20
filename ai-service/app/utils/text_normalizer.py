@@ -1,38 +1,59 @@
 import re
+import unicodedata
+
+PLACEHOLDER_VALUES = {
+    "",
+    "--",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "unknown",
+    "unbranded",
+    "-- unbranded --",
+    "no unilog brand",
+    "-- no unilog brand --",
+    "no dib brand",
+    "-- no dib brand --",
+}
 
 
 def normalize_text(value: str | None) -> str:
+    """General text normalization."""
+    if value is None:
+        return ""
+
+    value = str(value)
+    value = unicodedata.normalize("NFKC", value)
+    value = value.strip().lower()
+    value = re.sub(r"\s+", " ", value)
+
+    return value
+
+
+def normalize_entity(value: str | None) -> str:
+    """Normalization specifically for brands/manufacturers."""
+    value = normalize_text(value)
+
     if not value:
         return ""
 
-    value = value.strip().lower()
+    # Remove content inside parentheses
+    value = re.sub(r"\([^)]*\)", "", value)
 
-    value = re.sub(r"\s+", " ", value)
-
-    value = re.sub(r"[^\w\s.-]", " ", value)
-
+    # Remove common punctuation
+    value = re.sub(r"[^\w\s]", " ", value)
     value = re.sub(r"\s+", " ", value)
 
     return value.strip()
 
 
-def is_empty_value(value: str | None) -> bool:
-    if not value:
-        return True
-
+def is_placeholder(value: str | None) -> bool:
     normalized = normalize_text(value)
 
-    empty_values = {
-        "",
-        "--",
-        "n/a",
-        "na",
-        "none",
-        "null",
-        "unknown",
-        "unbranded",
-        "no unilog brand",
-        "no dib brand",
-    }
+    if normalized in PLACEHOLDER_VALUES:
+        return True
 
-    return normalized in empty_values
+    # Strip surrounding non-alphanumeric chars (e.g. "-- unbranded --" -> "unbranded")
+    stripped = re.sub(r"^[^\w]+|[^\w]+$", "", normalized).strip()
+    return stripped in PLACEHOLDER_VALUES

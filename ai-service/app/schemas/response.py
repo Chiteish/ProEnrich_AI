@@ -1,42 +1,56 @@
+from typing import Optional
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 
 class EntityMatch(BaseModel):
+
     raw_value: Optional[str] = None
+
     canonical_value: Optional[str] = None
+
     confidence: float = 0.0
-    method: Optional[str] = None
+
+    method: str
 
 
-class ExtractedAttribute(BaseModel):
-    label: str
-    value: str
-    confidence: float
-    source: str = "input"
+class ProductIdentity(BaseModel):
+
+    mpn: str
+
+    manufacturer: EntityMatch
+
+    brand: EntityMatch
 
 
-class ClassificationResult(BaseModel):
-    department: Optional[str] = None
-    class_name: Optional[str] = None
-    fine: Optional[str] = None
-    classpath: Optional[str] = None
-    confidence: float = 0.0
+class ProductUnderstanding(BaseModel):
+
+    product_type: Optional[str] = None
+
+    dimensions: list[str] = Field(
+        default_factory=list
+    )
+
+    quantity: Optional[int] = None
+
+    keywords: list[str] = Field(
+        default_factory=list
+    )
 
 
 class ProductProcessResponse(BaseModel):
+
     product_id: str
 
-    identity: dict
+    identity: ProductIdentity
 
-    classification: ClassificationResult
+    understanding: ProductUnderstanding
 
-    attributes: List[ExtractedAttribute] = Field(
+    attributes: list[dict] = Field(
         default_factory=list
     )
 
-    missing_attributes: List[str] = Field(
+    missing_attributes: list[str] = Field(
         default_factory=list
     )
 
-    processing_status: str = "completed"
+    processing_status: str
