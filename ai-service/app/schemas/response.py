@@ -46,7 +46,26 @@ class ClassificationResult(BaseModel):
 
     method: str
 
+class Evidence(BaseModel):
 
+    document_id: str
+
+    source: str
+
+    text: str
+
+    score: float
+    
+class ProductAttribute(BaseModel):
+
+    label: str
+
+    value: str
+
+    confidence: float
+
+    source: str
+    
 class ProductProcessResponse(BaseModel):
 
     product_id: str
@@ -57,11 +76,15 @@ class ProductProcessResponse(BaseModel):
 
     classification: ClassificationResult
 
-    attributes: list[dict] = Field(
+    attributes: list[ProductAttribute] = Field(
         default_factory=list
     )
 
     missing_attributes: list[str] = Field(
+        default_factory=list
+    )
+    
+    evidence: list[Evidence] = Field(
         default_factory=list
     )
 

@@ -39,8 +39,9 @@ class AttributeExtractionAgent:
     ):
 
         pattern = (
-            r"\b\d+(?:\.\d+)?\s*"
-            r"(?:in|inch|inches|mm|cm|ft)\b"
+            r"\b\d+(?:/\d+)?\s*x\s*"
+            r"\d+(?:/\d+)?"
+            r"(?:\s*(?:mm|cm|in|inch|inches|ft))?\b"
         )
 
         matches = re.findall(
@@ -53,7 +54,7 @@ class AttributeExtractionAgent:
 
         return [{
             "label": "Dimension",
-            "value": ", ".join(matches),
+            "value": matches[0],
             "confidence": 0.90,
             "source": "input"
         }]
