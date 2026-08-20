@@ -1,0 +1,42 @@
+# Byte-compiled / Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.nox/
+.hypothesis/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs & Code Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment Variables & Secrets (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Database, Vector Stores & Index Files
+*.faiss
+*.index
+*.sqlite3
+*.db
+
+# OS / System Artifacts
+.DS_Store
+Thumbs.db
+
+# Large Log Files
+*.log
