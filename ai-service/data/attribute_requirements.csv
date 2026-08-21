@@ -1,0 +1,5 @@
+product_type,department,class_name,fine,attribute_name,required
+sanding belt,,,,Dimension,true
+sanding belt,,,,Pack Quantity,true
+sanding belt,,,,Grit,true
+sanding belt,,,,Material,true

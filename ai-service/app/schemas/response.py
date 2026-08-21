@@ -1,91 +1,58 @@
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Any
+from pydantic import BaseModel
 
 
-class EntityMatch(BaseModel):
-
-    raw_value: Optional[str] = None
-    canonical_value: Optional[str] = None
-    confidence: float = 0.0
-    method: str
-
-
-class ProductIdentity(BaseModel):
-
-    mpn: str
-    manufacturer: EntityMatch
-    brand: EntityMatch
+class IdentityValue(BaseModel):
+    raw_value: str | None = None
+    canonical_value: str | None = None
+    confidence: float = 0
+    method: str = "unknown"
 
 
-class ProductUnderstanding(BaseModel):
-
-    product_type: Optional[str] = None
-
-    dimensions: list[str] = Field(
-        default_factory=list
-    )
-
-    quantity: Optional[int] = None
-
-    keywords: list[str] = Field(
-        default_factory=list
-    )
+class Identity(BaseModel):
+    mpn: str | None = None
+    manufacturer: IdentityValue
+    brand: IdentityValue
 
 
-class ClassificationResult(BaseModel):
+class Attribute(BaseModel):
+    label: str
+    value: Any
+    uom: str | None = None
+    confidence: float = 0
+    source: str = "unknown"
 
-    department: Optional[str] = None
-
-    class_name: Optional[str] = None
-
-    fine: Optional[str] = None
-
-    classpath: Optional[str] = None
-
-    confidence: float = 0.0
-
-    method: str
 
 class Evidence(BaseModel):
-
     document_id: str
-
     source: str
-
     text: str
-
     score: float
-    
-class ProductAttribute(BaseModel):
 
-    label: str
 
-    value: str
+class Understanding(BaseModel):
+    product_type: str | None = None
+    dimensions: list[str] = []
+    quantity: int | None = None
+    grit: str | None = None
+    keywords: list[str] = []
 
-    confidence: float
 
-    source: str
-    
-class ProductProcessResponse(BaseModel):
+class Classification(BaseModel):
+    department: str | None = None
+    class_name: str | None = None
+    fine: str | None = None
+    classpath: str | None = None
+    confidence: float = 0
+    method: str = "no_taxonomy"
 
+
+class ProductResponse(BaseModel):
     product_id: str
-
-    identity: ProductIdentity
-
-    understanding: ProductUnderstanding
-
-    classification: ClassificationResult
-
-    attributes: list[ProductAttribute] = Field(
-        default_factory=list
-    )
-
-    missing_attributes: list[str] = Field(
-        default_factory=list
-    )
-    
-    evidence: list[Evidence] = Field(
-        default_factory=list
-    )
-
+    identity: Identity
+    understanding: Understanding
+    classification: Classification
+    attributes: list[Attribute]
+    missing_attributes: list[str]
+    evidence: list[Evidence]
     processing_status: str

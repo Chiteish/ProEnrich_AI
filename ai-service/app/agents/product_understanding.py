@@ -1,73 +1,107 @@
 import re
 
 
-class ProductUnderstandingAgent:
+class ProductUnderstanding:
 
-    def analyze(
-        self,
-        part_number: str,
-        description: str
-    ):
-        text = description or ""
-        lower = text.lower()
+    def analyze(self, text: str):
 
-        product_type = self._detect_product_type(lower)
-        dimensions = self._extract_dimensions(lower)
-        quantity = self._extract_quantity(lower)
+        text_lower = text.lower()
+
+        product_type = self._product_type(text_lower)
+        dimensions = self._dimensions(text_lower)
+        quantity = self._quantity(text_lower)
+        grit = self._grit(text_lower)
+
+        keywords = self._keywords(
+            text_lower,
+            product_type
+        )
 
         return {
             "product_type": product_type,
             "dimensions": dimensions,
             "quantity": quantity,
-            "keywords": self._extract_keywords(lower)
+            "grit": grit,
+            "keywords": keywords
         }
 
-    def _detect_product_type(self, text: str):
-        product_types = [
-            "sanding belt",
-            "drill bit",
-            "saw blade",
-            "grinding wheel",
-            "faucet",
-            "valve",
-            "bearing",
-            "motor",
-            "switch",
-            "pipe fitting"
-        ]
+    def _product_type(self, text):
 
-        for product_type in product_types:
-            if product_type in text:
-                return product_type
+        if "sanding belt" in text:
+            return "sanding belt"
+
+        if "sanding" in text and "belt" in text:
+            return "sanding belt"
 
         return None
 
-    def _extract_dimensions(self, text: str):
+    def _dimensions(self, text):
+
+        pattern = (
+            r"\b\d+(?:/\d+)?\s*x\s*"
+            r"\d+(?:/\d+)?"
+            r"(?:\s*(?:mm|cm|in|inch|inches))?\b"
+        )
+
+        return re.findall(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+    def _quantity(self, text):
+
         patterns = [
-            # Cross dimensions with fractions or decimals (e.g., "1/2 x 18", "1/2in x 18in", "12.5 x 18 mm")
-            r"\b\d+(?:/\d+|\.\d+)?\s*(?:in|inch|inches|mm|cm|ft)?\s*x\s*\d+(?:/\d+|\.\d+)?\s*(?:in|inch|inches|mm|cm|ft)?\b",
-            # Single unit dimensions (e.g., "18 in", "1/2 inch", "5mm")
-            r"\b\d+(?:/\d+|\.\d+)?\s*(?:in|inch|inches|mm|cm|ft)\b"
+            r"\b(\d+)\s*pc\b",
+            r"\b(\d+)\s*pcs\b",
+            r"\b(\d+)\s*pieces\b",
+            r"\bpack\s*of\s*(\d+)\b"
         ]
 
-        matches = []
         for pattern in patterns:
-            found = re.findall(pattern, text)
-            for m in found:
-                if m not in matches:
-                    matches.append(m)
 
-        return matches
+            match = re.search(
+                pattern,
+                text,
+                re.IGNORECASE
+            )
 
-    def _extract_quantity(self, text: str):
-        pattern = r"\b(\d+)\s*(?:pc|pcs|piece|pieces|pack)\b"
-        match = re.search(pattern, text)
-
-        if match:
-            return int(match.group(1))
+            if match:
+                return int(match.group(1))
 
         return None
 
-    def _extract_keywords(self, text: str):
-        words = re.findall(r"\b[a-zA-Z]{3,}\b", text)
-        return list(dict.fromkeys(words))[:20]
+    def _grit(self, text):
+
+        patterns = [
+            r"\b(\d+)\s*[-]?\s*grit\b",
+            r"\bgrit\s*[:\-]?\s*(\d+)\b"
+        ]
+
+        for pattern in patterns:
+
+            match = re.search(
+                pattern,
+                text,
+                re.IGNORECASE
+            )
+
+            if match:
+                return match.group(1)
+
+        return None
+
+    def _keywords(self, text, product_type):
+
+        keywords = []
+
+        if "diablo" in text:
+            keywords.append("diablo")
+
+        if "sanding" in text:
+            keywords.append("sanding")
+
+        if "belt" in text:
+            keywords.append("belt")
+
+        return keywords
