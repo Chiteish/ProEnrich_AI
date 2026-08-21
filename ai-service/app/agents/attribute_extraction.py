@@ -1,115 +1,44 @@
-import re
+from app.agents.product_understanding import ProductUnderstanding
 
+class AttributeExtractor:
 
-class AttributeExtractionAgent:
+    def __init__(self):
+        self.understanding_agent = ProductUnderstanding()
 
-    def extract(
-        self,
-        description: str
-    ):
-
-        if not description:
-            return []
+    def extract(self, input_data):
+        if isinstance(input_data, str):
+            understanding = self.understanding_agent.analyze(input_data)
+        else:
+            understanding = input_data
 
         attributes = []
 
-        attributes.extend(
-            self._extract_dimensions(
-                description
-            )
-        )
+        for dimension in understanding.get("dimensions", []):
+            attributes.append({
+                "label": "Dimension",
+                "value": str(dimension),
+                "confidence": 0.90,
+                "source": "input"
+            })
 
-        attributes.extend(
-            self._extract_quantity(
-                description
-            )
-        )
+        quantity = understanding.get("quantity")
 
-        attributes.extend(
-            self._extract_material(
-                description
-            )
-        )
+        if quantity is not None:
+            attributes.append({
+                "label": "Pack Quantity",
+                "value": str(quantity),
+                "confidence": 0.95,
+                "source": "input"
+            })
+
+        grit = understanding.get("grit")
+
+        if grit is not None:
+            attributes.append({
+                "label": "Grit",
+                "value": str(grit),
+                "confidence": 0.95,
+                "source": "input"
+            })
 
         return attributes
-
-    def _extract_dimensions(
-        self,
-        text: str
-    ):
-
-        pattern = (
-            r"\b\d+(?:/\d+)?\s*x\s*"
-            r"\d+(?:/\d+)?"
-            r"(?:\s*(?:mm|cm|in|inch|inches|ft))?\b"
-        )
-
-        matches = re.findall(
-            pattern,
-            text.lower()
-        )
-
-        if not matches:
-            return []
-
-        return [{
-            "label": "Dimension",
-            "value": matches[0],
-            "confidence": 0.90,
-            "source": "input"
-        }]
-
-    def _extract_quantity(
-        self,
-        text: str
-    ):
-
-        pattern = (
-            r"\b(\d+)\s*"
-            r"(?:pc|pcs|piece|pieces|pack)\b"
-        )
-
-        match = re.search(
-            pattern,
-            text.lower()
-        )
-
-        if not match:
-            return []
-
-        return [{
-            "label": "Pack Quantity",
-            "value": match.group(1),
-            "confidence": 0.95,
-            "source": "input"
-        }]
-
-    def _extract_material(
-        self,
-        text: str
-    ):
-
-        materials = [
-            "stainless steel",
-            "carbon steel",
-            "aluminum",
-            "brass",
-            "steel",
-            "plastic",
-            "rubber"
-        ]
-
-        lower = text.lower()
-
-        for material in materials:
-
-            if material in lower:
-
-                return [{
-                    "label": "Material",
-                    "value": material.title(),
-                    "confidence": 0.90,
-                    "source": "input"
-                }]
-
-        return []

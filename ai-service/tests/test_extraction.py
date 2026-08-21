@@ -1,11 +1,11 @@
 from app.agents.attribute_extraction import (
-    AttributeExtractionAgent
+    AttributeExtractor
 )
 
 
 def test_quantity_extraction():
 
-    agent = AttributeExtractionAgent()
+    agent = AttributeExtractor()
 
     result = agent.extract(
         "Sanding Belt 6pc"
@@ -21,7 +21,7 @@ def test_quantity_extraction():
 
 def test_dimension_extraction():
 
-    agent = AttributeExtractionAgent()
+    agent = AttributeExtractor()
 
     result = agent.extract(
         "1/2 x 18 inch sanding belt"

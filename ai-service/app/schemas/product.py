@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
-
 class ProductRequest(BaseModel):
     mfg_part_num: str
     part_desc: str

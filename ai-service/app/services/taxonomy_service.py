@@ -1,78 +1,67 @@
-from pathlib import Path
+import os
 import pandas as pd
 
 
 class TaxonomyService:
 
-    def __init__(self, taxonomy_file: Path):
+    REQUIRED_COLUMNS = {
+        "department",
+        "class_name",
+        "fine",
+        "classpath"
+    }
 
-        self.taxonomy_file = taxonomy_file
+    def __init__(self, path):
 
-        if taxonomy_file.exists():
-            self.df = pd.read_csv(
-                taxonomy_file
+        self.path = path
+        self.taxonomy = None
+
+    def load(self):
+
+        if not os.path.exists(self.path):
+            return None
+
+        df = pd.read_csv(self.path)
+
+        if not self.REQUIRED_COLUMNS.issubset(
+            set(df.columns)
+        ):
+            raise ValueError(
+                "Invalid taxonomy columns"
             )
-        else:
-            self.df = pd.DataFrame()
 
-    def get_taxonomy(self):
+        self.taxonomy = df
 
-        if self.df.empty:
-            return []
+        return df
 
-        return self.df.to_dict(
-            orient="records"
-        )
+    def find_match(self, product_type):
 
-    def get_required_attributes(
-        self,
-        product_class: str | None
-    ):
+        if self.taxonomy is None:
+            self.load()
 
-        # Day-3 baseline.
-        # Replace this with the company's
-        # actual attribute master when available.
+        if self.taxonomy is None:
+            return None
 
-        if not product_class:
-            return []
-
-        return []
-    
-class AttributeRequirementService:
-
-    def __init__(self):
-
-        self.requirements = {}
-
-    def set_requirements(
-        self,
-        requirements: dict
-    ):
-
-        self.requirements = requirements
-
-    def find_missing(
-        self,
-        product_class: str | None,
-        extracted_attributes: list[dict]
-    ):
-
-        if not product_class:
-            return []
-
-        required = self.requirements.get(
-            product_class,
-            []
-        )
-
-        existing = {
-            attribute["label"].lower()
-            for attribute in extracted_attributes
-        }
-
-        return [
-            attribute
-            for attribute in required
-            if attribute.lower()
-            not in existing
+        matches = self.taxonomy[
+            self.taxonomy["fine"]
+            .fillna("")
+            .str.lower()
+            .str.contains(
+                product_type.lower(),
+                regex=False
+            )
         ]
+
+        if matches.empty:
+            return None
+
+        row = matches.iloc[0]
+
+        return {
+            "department": row["department"],
+            "class_name": row["class_name"],
+            "fine": row["fine"],
+            "classpath": row["classpath"],
+            "confidence": 0.80,
+            "method": "taxonomy_match"
+        }
