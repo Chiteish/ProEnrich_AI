@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const catalogRoutes = require("./routes/catalog.routes");
 const jobRoutes = require("./routes/job.routes");
+const aiRoutes = require("./routes/ai.routes");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/catalog", catalogRoutes);
 
 app.use("/api/jobs", jobRoutes);
+app.use("/api/ai", aiRoutes);
 
 
 module.exports = app;

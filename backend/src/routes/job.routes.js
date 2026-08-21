@@ -2,7 +2,9 @@ const express = require("express");
 
 const {
     startProcessing,
-    getJobStatus
+    getJobStatus,
+    getJobOutput,
+    downloadJobOutput
 } = require("../controllers/job.controller");
 
 const router = express.Router();
@@ -17,4 +19,14 @@ router.get(
     getJobStatus
 );
 
-module.exports = router; 
+router.get(
+    "/:jobId/output",
+    getJobOutput
+);
+
+router.get(
+    "/:jobId/output/download",
+    downloadJobOutput
+);
+
+module.exports = router;
