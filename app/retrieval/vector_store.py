@@ -35,9 +35,9 @@ class VectorStore:
 
         results = []
 
-        for distance, index in zip(
-            distances[0],
-            indices[0]
+        for rank, (distance, index) in enumerate(
+            zip(distances[0], indices[0]),
+            start=1
         ):
 
             if index != -1:
@@ -45,6 +45,8 @@ class VectorStore:
                 result = self.metadata[index].copy()
 
                 result["distance"] = float(distance)
+
+                result["rank"] = rank
 
                 results.append(result)
 

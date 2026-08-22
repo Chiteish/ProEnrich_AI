@@ -1,29 +1,18 @@
-def build_enrichment_context(
-    product,
-    retrieved_chunks
-):
+class EnrichmentAgent:
 
-    context = "\n\n".join(
-        [
-            (
-                f"Source: {chunk['source']}, "
-                f"Page: {chunk['page']}\n"
-                f"{chunk['text']}"
-            )
-            for chunk in retrieved_chunks
-        ]
-    )
+    def enrich(self, product, attribute, retrieved_chunks):
 
-    return {
-        "product": product,
-        "context": context,
-        "instruction": """
-Extract ONLY the requested missing attributes.
+        if not retrieved_chunks:
+            return {
+                "value": None,
+                "confidence": 0.0,
+                "status": "NOT_FOUND"
+            }
 
-Use ONLY information present in the provided context.
+        best_result = retrieved_chunks[0]
 
-Do not guess or invent values.
-
-Return JSON.
-"""
-    }
+        return {
+            "value": best_result["text"],
+            "confidence": 1.0 / (1.0 + best_result.get("distance", 1.0)),
+            "status": "FOUND"
+        }

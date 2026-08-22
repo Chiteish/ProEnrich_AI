@@ -5,10 +5,13 @@ def extract_evidence(results):
     for result in results:
 
         evidence.append({
-            "source": result["source"],
-            "page": result["page"],
-            "text": result["text"],
-            "similarity_distance": result["distance"]
+            "source": result.get("source", "unknown"),
+            "source_url": result.get("source_url"),
+            "product_id": result.get("product_id"),
+            "page": result.get("page"),
+            "text": result.get("text", ""),
+            "similarity_distance": result.get("distance"),
+            "rank": result.get("rank")
         })
 
     return evidence

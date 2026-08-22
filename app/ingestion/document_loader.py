@@ -19,6 +19,14 @@ def _csv_row_to_text(row):
     return " | ".join(parts)
 
 
+def _source_url(row):
+    for key in ("MFR URL", "Ref URL 1", "Ref URL 2"):
+        value = str(row.get(key) or "").strip()
+        if value.startswith(("http://", "https://")):
+            return value
+    return None
+
+
 def load_documents(folder_path: str):
 
     documents = []
@@ -55,7 +63,13 @@ def load_documents(folder_path: str):
                             documents.append({
                                 "source": filename,
                                 "page": row_number,
-                                "text": text
+                                "text": text,
+                                "source_url": _source_url(row),
+                                "product_id": str(
+                                    row.get("Mfg_Part_Num")
+                                    or row.get("PART_NUMBER")
+                                    or ""
+                                ).strip()
                             })
             except Exception:
                 continue
@@ -80,7 +94,9 @@ def chunk_documents(documents, chunk_size=500, overlap=100):
             chunks.append({
                 "text": chunk_text,
                 "source": document["source"],
-                "page": document["page"]
+                "page": document["page"],
+                "source_url": document.get("source_url"),
+                "product_id": document.get("product_id")
             })
 
             start += chunk_size - overlap
