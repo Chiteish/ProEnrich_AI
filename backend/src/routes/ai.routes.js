@@ -1,7 +1,8 @@
 const express = require("express");
 
 const {
-    testAI
+    testAI,
+    enrichProduct
 } = require("../controllers/ai.controller");
 
 const router = express.Router();
@@ -11,4 +12,9 @@ router.post(
     testAI
 );
 
-module.exports = router;
+router.post(
+    "/enrich",
+    enrichProduct
+);
+
+module.exports = router;
