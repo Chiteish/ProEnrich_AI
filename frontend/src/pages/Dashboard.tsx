@@ -295,15 +295,21 @@ export const Dashboard: React.FC = () => {
         </div>
 
         <div className="divide-y divide-slate-800/80">
-          {activities.map((activity) => (
-            <div key={activity.id} className="py-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-base">{activity.icon}</span>
-                <p className="text-xs text-slate-200">{activity.message}</p>
-              </div>
-              <span className="text-[10px] font-mono text-slate-500 shrink-0">{activity.timestamp}</span>
+          {activities.length === 0 ? (
+            <div className="py-10 text-center text-slate-500 text-xs">
+              No recent activity — upload a catalog to begin enrichment.
             </div>
-          ))}
+          ) : (
+            activities.map((activity) => (
+              <div key={activity.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-base leading-none">{activity.icon}</span>
+                  <p className="text-xs text-slate-200">{activity.message}</p>
+                </div>
+                <span className="text-[10px] font-mono text-slate-500 shrink-0">{activity.timestamp}</span>
+              </div>
+            ))
+          )}
         </div>
       </motion.div>
     </MainLayout>

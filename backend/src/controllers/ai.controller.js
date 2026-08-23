@@ -57,6 +57,30 @@ const enrichProduct = async (req, res) => {
             missing_attributes
         });
 
+        if (result.status === "FOUND" && result.web_discovery) {
+            const { processAssets } = require("../services/asset.service");
+            const assetManifest = await processAssets(mpn, result.web_discovery);
+            result.assets = assetManifest;
+        } else {
+            result.assets = {
+                product_image: { available: false, url: null, external_url: null, error: null },
+                alternate_images: [],
+                specification_sheet: { available: false, url: null, external_url: null, error: null },
+                manual: { available: false, url: null, external_url: null, error: null }
+            };
+        }
+
+        // Save complete result to database
+        try {
+            const productModel = require("../models/product.model");
+            productModel.saveProductEnrichment(
+                { mpn, manufacturer, description, missing_attributes },
+                result
+            );
+        } catch (dbError) {
+            console.error("Failed to save product enrichment to database:", dbError);
+        }
+
         return res.json(result);
     } catch (error) {
         console.error("Product enrichment failed:", error);
@@ -84,7 +108,92 @@ const enrichProduct = async (req, res) => {
     }
 };
 
+const getAsset = async (req, res) => {
+    try {
+        const { productId, filename } = req.params;
+        const path = require("path");
+        const fs = require("fs");
+
+        // If productId is not provided, this is a legacy Phase 1 route request (/assets/:filename)
+        // Note: Express maps the single parameter to productId when route is /assets/:filename
+        // So let's check if req.route.path is "/assets/:filename"
+        const isLegacyRoute = req.route && req.route.path === "/assets/:filename";
+        
+        if (isLegacyRoute) {
+            const legacyFilename = req.params.filename || req.params.productId;
+            if (!legacyFilename || !/^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp|pdf)$/i.test(legacyFilename)) {
+                return res.status(400).json({
+                    error: "BAD_REQUEST",
+                    message: "Invalid filename format"
+                });
+            }
+
+            const assetsDir = path.resolve(__dirname, "../../data/assets");
+            const filePath = path.join(assetsDir, legacyFilename);
+
+            if (!filePath.startsWith(assetsDir)) {
+                return res.status(403).json({
+                    error: "FORBIDDEN",
+                    message: "Access denied"
+                });
+            }
+
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({
+                    error: "NOT_FOUND",
+                    message: "Asset not found"
+                });
+            }
+
+            return res.sendFile(filePath);
+        }
+
+        // Phase 2: Dynamic product-isolated asset request (/assets/:productId/:filename)
+        if (!productId || !/^[a-zA-Z0-9_-]+$/.test(productId)) {
+            return res.status(400).json({
+                error: "BAD_REQUEST",
+                message: "Invalid product identifier"
+            });
+        }
+
+        if (!filename || !/^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp|pdf)$/i.test(filename)) {
+            return res.status(400).json({
+                error: "BAD_REQUEST",
+                message: "Invalid filename format"
+            });
+        }
+
+        const assetsDir = path.resolve(__dirname, "../../data/assets");
+        const productDir = path.join(assetsDir, productId);
+        const filePath = path.join(productDir, filename);
+
+        // Security: Verify that the resolved productDir starts with assetsDir and filePath starts with productDir
+        if (!productDir.startsWith(assetsDir) || !filePath.startsWith(productDir)) {
+            return res.status(403).json({
+                error: "FORBIDDEN",
+                message: "Access denied"
+            });
+        }
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                error: "NOT_FOUND",
+                message: "Asset not found"
+            });
+        }
+
+        return res.sendFile(filePath);
+    } catch (error) {
+        console.error("Failed to get asset:", error);
+        return res.status(500).json({
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Failed to load asset"
+        });
+    }
+};
+
 module.exports = {
     testAI,
-    enrichProduct
+    enrichProduct,
+    getAsset
 };

@@ -247,6 +247,24 @@ async function processCatalog(jobId, filePath, options = {}) {
             const product = rows[i];
             const productId = product.Mfg_Part_Num || `ROW-${i + 1}`;
 
+            // Save/register product in the database so it appears in the catalog
+            try {
+                const productModel = require("../models/product.model");
+                productModel.saveProductFromCatalog({
+                    mpn: product.Mfg_Part_Num || `ROW-${i + 1}`,
+                    manufacturer: product.Part_Manuf || "",
+                    description: product.Part_Desc || "",
+                    brand: product.E1_Brand || product.Unilog_Brand || product.DIB_Brand || "",
+                    e1_brand: product.E1_Brand || "",
+                    unilog_brand: product.Unilog_Brand || "",
+                    dib_brand: product.DIB_Brand || "",
+                    part_manuf: product.Part_Manuf || "",
+                    part_desc: product.Part_Desc || ""
+                });
+            } catch (dbError) {
+                console.error("Failed to register catalog product:", dbError);
+            }
+
             try {
                 const aiRequest = mapRowToAIRequest(product);
                 const aiResult = await processProductWithAI(aiRequest);
@@ -261,6 +279,23 @@ async function processCatalog(jobId, filePath, options = {}) {
                     input: product,
                     aiResult: aiResult
                 });
+
+                try {
+                    const productModel = require("../models/product.model");
+                    productModel.saveProductFromAI({
+                        mpn: product.Mfg_Part_Num || `ROW-${i + 1}`,
+                        manufacturer: product.Part_Manuf || "",
+                        description: product.Part_Desc || "",
+                        brand: product.E1_Brand || product.Unilog_Brand || product.DIB_Brand || "",
+                        e1_brand: product.E1_Brand || "",
+                        unilog_brand: product.Unilog_Brand || "",
+                        dib_brand: product.DIB_Brand || "",
+                        part_manuf: product.Part_Manuf || "",
+                        part_desc: product.Part_Desc || ""
+                    }, aiResult);
+                } catch (dbError) {
+                    console.error("Failed to save product AI result to database:", dbError);
+                }
 
             } catch (aiError) {
                 const isConnectionError =
@@ -338,7 +373,8 @@ async function processCatalog(jobId, filePath, options = {}) {
                 progress: 100,
                 processed: total,
                 nextIndex: total,
-                outputPath
+                outputPath,
+                backfilled: true
             });
             console.log(`Job ${jobId} completed successfully (${total - failedCount}/${total} succeeded). Output saved to: ${outputPath}`);
         }

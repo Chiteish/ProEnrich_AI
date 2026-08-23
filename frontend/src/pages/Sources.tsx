@@ -82,7 +82,18 @@ export const Sources: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSources.map((source, idx) => (
+          {filteredSources.length === 0 ? (
+            <div className="col-span-3 py-20 flex flex-col items-center justify-center text-center bg-[#081126]/60 rounded-2xl border border-blue-500/15">
+              <Database size={40} className="text-cyan-400/30 mb-4" />
+              <h3 className="text-white font-bold text-base mb-1">No Evidence Sources Found</h3>
+              <p className="text-xs text-slate-400 max-w-xs">
+                {search.trim()
+                  ? `No sources match "${search}". Try clearing the filter.`
+                  : 'Evidence sources will appear here once products are enriched and have retrieved web evidence or datasheets.'}
+              </p>
+            </div>
+          ) : (
+            filteredSources.map((source, idx) => (
             <motion.div
               key={source.id}
               initial={{ opacity: 0, y: 15 }}
@@ -162,7 +173,8 @@ export const Sources: React.FC = () => {
                 )}
               </div>
             </motion.div>
-          ))}
+          ))
+          )}
         </div>
       )}
     </MainLayout>

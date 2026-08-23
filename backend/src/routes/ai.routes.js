@@ -2,7 +2,8 @@ const express = require("express");
 
 const {
     testAI,
-    enrichProduct
+    enrichProduct,
+    getAsset
 } = require("../controllers/ai.controller");
 
 const router = express.Router();
@@ -15,6 +16,16 @@ router.post(
 router.post(
     "/enrich",
     enrichProduct
+);
+
+router.get(
+    "/assets/:productId/:filename",
+    getAsset
+);
+
+router.get(
+    "/assets/:filename",
+    getAsset
 );
 
 module.exports = router;

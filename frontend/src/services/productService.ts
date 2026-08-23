@@ -17,6 +17,7 @@ class ProductService {
     department?: string;
     status?: string;
     search?: string;
+    jobId?: string;
   }): Promise<Product[]> {
     if (useMockData()) {
       return new Promise((resolve) => {
@@ -176,12 +177,20 @@ class ProductService {
     }
 
     try {
-      const response = await apiClient.post<FileUploadResponse>('/ingestion/upload', formData, {
+      const response = await apiClient.post<any>('/catalog/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      const data = response.data;
+      return {
+        fileId: data.job?.jobId || data.catalog?.catalogId || 'file-' + Date.now(),
+        fileName: file.name,
+        rows: data.catalog?.rows || 0,
+        inputFields: data.catalog?.columns || 0,
+        status: data.validation?.status || 'ready',
+        preview: []
+      };
     } catch (error) {
       console.error('Failed to upload file:', error);
       throw error;

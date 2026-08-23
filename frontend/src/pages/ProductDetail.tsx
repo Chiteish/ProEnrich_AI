@@ -4,8 +4,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
-import type { Product, ProductAttribute, Evidence } from '../types';
+import type { Product, ProductAttribute, Evidence, WebDiscovery, AssetManifest } from '../types';
 import { productService } from '../services/productService';
+import { enrichmentService } from '../services/enrichmentService';
 import {
   Package,
   CheckCircle2,
@@ -22,6 +23,20 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const buildAssetUrl = (url: string | null): string => {
+  if (!url) return '';
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  try {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const origin = new URL(apiBaseUrl).origin;
+    return `${origin}${url}`;
+  } catch (e) {
+    return `http://localhost:5000${url}`;
+  }
+};
+
 type TabType = 'overview' | 'attributes' | 'descriptions' | 'evidence' | 'validation' | 'raw';
 
 export const ProductDetail: React.FC = () => {
@@ -32,6 +47,106 @@ export const ProductDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedAttribute, setSelectedAttribute] = useState<ProductAttribute | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [enriching, setEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+  const [webDiscovery, setWebDiscovery] = useState<WebDiscovery | null>(null);
+  const [rawPayload, setRawPayload] = useState<any>(null);
+  const [selectedImageModal, setSelectedImageModal] = useState<string | null>(null);
+  const [assets, setAssets] = useState<AssetManifest | null>(null);
+
+  const handleEnrichProduct = async () => {
+    if (!product) return;
+    setEnriching(true);
+    setEnrichError(null);
+    try {
+      const response = await enrichmentService.enrichProduct({
+        mpn: product.mfrPartNum,
+        manufacturer: product.manufacturer,
+        description: product.description,
+        missing_attributes: [
+          'HEIGHT',
+          'WIDTH',
+          'LENGTH',
+          'WEIGHT',
+          'VOLUME',
+          'UPC',
+          'UNSPSC'
+        ]
+      });
+
+      // Update structured attributes
+      if (response.structured_attributes) {
+        const newAttributes: ProductAttribute[] = Object.entries(response.structured_attributes).map(([key, val], idx) => ({
+          id: `attr-enrich-${idx}`,
+          productId: product.id,
+          attribute: key,
+          value: val === null ? 'Not found' : val,
+          uom: '',
+          confidence: val === null ? 0 : 95,
+          source: val === null ? '—' : 'RAG / Web Discovery',
+          status: val === null ? 'needs_review' : 'validated',
+          evidence: val === null ? 'No evidence found' : `Extracted via RAG/Web Discovery: ${val}`,
+        }));
+        setAttributes(newAttributes);
+      }
+
+      // Update evidence
+      if (response.retrieved_evidence) {
+        const newEvidence: Evidence[] = response.retrieved_evidence.map((ev, idx) => ({
+          id: `ev-enrich-${idx}`,
+          productId: product.id,
+          attributeId: '',
+          attribute: 'Product Specs Chunk',
+          value: '',
+          confidence: Math.round((1.0 / (1.0 + (ev.similarity_distance || 0.05))) * 100),
+          source: ev.source || 'RAG Grounded Chunk',
+          sourceType: 'catalog',
+          sourceReliability: 'high',
+          page: ev.page,
+          evidence: ev.text,
+          url: ev.source_url || undefined,
+        }));
+        setEvidence(newEvidence);
+      }
+
+      // Update web discovery metadata
+      if (response.web_discovery) {
+        setWebDiscovery(response.web_discovery);
+      }
+
+      // Update assets manifest
+      if (response.assets) {
+        setAssets(response.assets);
+      }
+
+      // Update raw payload
+      setRawPayload(response);
+
+      // Update status/metrics
+      setProduct({
+        ...product,
+        status: response.status === 'FOUND' ? 'validated' : 'review',
+        completeness: response.status === 'FOUND' ? 75 : product.completeness,
+        confidence: response.status === 'FOUND' ? 95 : product.confidence,
+      });
+
+    } catch (err: any) {
+      console.error('Enrichment failed:', err);
+      if (err.error === 'RAG_SERVICE_UNAVAILABLE' || err.status === 503) {
+        setEnrichError('RAG enrichment service is currently unavailable.');
+      } else if (err.error === 'RAG_SERVICE_TIMEOUT' || err.status === 504) {
+        setEnrichError('RAG enrichment request timed out. Please try again.');
+      } else if (err.error === 'BAD_REQUEST' || err.status === 400) {
+        setEnrichError(err.message || 'Invalid enrichment request parameters.');
+      } else {
+        setEnrichError('Unable to enrich product. Please try again.');
+      }
+    } finally {
+      setEnriching(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +160,76 @@ export const ProductDetail: React.FC = () => {
         setProduct(prod);
         setAttributes(attrs);
         setEvidence(evid);
+
+        // Fetch persisted enrichment from backend if available
+        try {
+          const enrichment = await enrichmentService.getProductEnrichment(prod.mfrPartNum);
+          if (enrichment && enrichment.status) {
+            // Update structured attributes
+            if (enrichment.structured_attributes) {
+              const newAttributes: ProductAttribute[] = Object.entries(enrichment.structured_attributes).map(([key, val], idx) => ({
+                id: `attr-enrich-${idx}`,
+                productId: prod.id,
+                attribute: key,
+                value: val === null ? 'Not found' : val as string,
+                uom: '',
+                confidence: val === null ? 0 : 95,
+                source: val === null ? '—' : 'RAG / Web Discovery',
+                status: val === null ? 'needs_review' : 'validated',
+                evidence: val === null ? 'No evidence found' : `Extracted via RAG/Web Discovery: ${val}`,
+              }));
+              setAttributes(newAttributes);
+            }
+
+            // Update evidence
+            if (enrichment.retrieved_evidence) {
+              const newEvidence: Evidence[] = enrichment.retrieved_evidence.map((ev, idx) => ({
+                id: `ev-enrich-${idx}`,
+                productId: prod.id,
+                attributeId: '',
+                attribute: 'Product Specs Chunk',
+                value: '',
+                confidence: Math.round((1.0 / (1.0 + (ev.similarity_distance || 0.05))) * 100),
+                source: ev.source || 'RAG Grounded Chunk',
+                sourceType: 'catalog',
+                sourceReliability: 'high',
+                page: ev.page,
+                evidence: ev.text,
+                url: ev.source_url || undefined,
+              }));
+              setEvidence(newEvidence);
+            }
+
+            // Update web discovery metadata
+            if (enrichment.web_discovery) {
+              setWebDiscovery(enrichment.web_discovery);
+            }
+
+            // Fetch persisted assets
+            try {
+              const assetsRes = await enrichmentService.getProductAssets(prod.mfrPartNum);
+              if (assetsRes) {
+                setAssets(assetsRes);
+              }
+            } catch (assetsErr) {
+              console.error('Failed to fetch persisted assets:', assetsErr);
+            }
+
+            // Set raw payload
+            setRawPayload(enrichment);
+
+            // Update status/metrics
+            setProduct({
+              ...prod,
+              status: enrichment.status === 'FOUND' ? 'validated' : 'review',
+              completeness: enrichment.status === 'FOUND' ? 75 : prod.completeness,
+              confidence: enrichment.status === 'FOUND' ? 95 : prod.confidence,
+            });
+          }
+        } catch (enrichErr) {
+          // Gently ignore if not previously enriched
+          console.log('No persisted enrichment found for product:', prod.mfrPartNum);
+        }
       } catch (error) {
         console.error('Failed to fetch product details:', error);
       } finally {
@@ -75,6 +260,10 @@ export const ProductDetail: React.FC = () => {
     { label: 'Raw Payload', value: 'raw' },
   ];
 
+  const prodImg = assets?.product_image;
+  const specSheet = assets?.specification_sheet;
+  const manualAsset = assets?.manual;
+
   return (
     <MainLayout>
       {/* Back Link */}
@@ -101,16 +290,27 @@ export const ProductDetail: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-black text-white">{product.description}</h1>
           </div>
 
-          <span
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 ${
-              product.status === 'validated' || product.status === 'commerce-ready'
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-            }`}
-          >
-            <CheckCircle2 size={14} />
-            <span className="capitalize">{product.status.replace('-', ' ')}</span>
-          </span>
+          <div className="flex flex-col sm:flex-row md:flex-col items-end gap-3 shrink-0">
+            <span
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold ${
+                product.status === 'validated' || product.status === 'commerce-ready'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                  : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+              }`}
+            >
+              <CheckCircle2 size={14} />
+              <span className="capitalize">{product.status.replace('-', ' ')}</span>
+            </span>
+
+            <button
+              onClick={handleEnrichProduct}
+              disabled={enriching}
+              className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-purple-800 disabled:to-indigo-800 text-white font-bold text-xs shadow-[0_0_20px_rgba(147,51,234,0.4)] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-60"
+            >
+              <Sparkles size={14} className={enriching ? 'animate-spin text-purple-200' : 'text-purple-300'} />
+              <span>{enriching ? 'Enriching product...' : 'Enrich with RAG'}</span>
+            </button>
+          </div>
         </div>
 
         {/* 4 Quality Metric Bars */}
@@ -128,6 +328,14 @@ export const ProductDetail: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Error Banner */}
+      {enrichError && (
+        <div className="p-4 mb-6 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+          <AlertTriangle size={16} className="text-rose-400 shrink-0" />
+          <span>{enrichError}</span>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 border-b border-blue-500/15">
@@ -195,6 +403,266 @@ export const ProductDetail: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {(webDiscovery || assets) && (
+              <div className="p-6 rounded-2xl bg-[#081126]/90 border border-blue-500/20 col-span-1 md:col-span-2 space-y-4">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Web Discovery Metadata</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  
+                  {/* Authoritative Manufacturer URL */}
+                  <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-1.5">
+                    <p className="text-slate-400 font-semibold">Authoritative Manufacturer URL</p>
+                    {webDiscovery?.mfr_url ? (
+                      <a
+                        href={webDiscovery.mfr_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-cyan-400 hover:underline inline-flex items-center gap-1 font-mono break-all cursor-pointer"
+                      >
+                        <span>{webDiscovery.mfr_url}</span>
+                        <ExternalLink size={12} className="shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-slate-500">Not found</span>
+                    )}
+                  </div>
+
+                  {/* Specification Sheet */}
+                  <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-1.5 flex flex-col justify-between">
+                    <div>
+                      <p className="text-slate-400 font-semibold">Specification Sheet</p>
+                      {specSheet?.available ? (
+                        <p className="text-slate-300 font-mono text-[11px] break-all mt-1">
+                          {specSheet.url ? specSheet.url.split('/').pop() : 'specification-sheet.pdf'}
+                        </p>
+                      ) : specSheet?.external_url ? (
+                        <p className="text-slate-300 font-mono text-[11px] break-all mt-1">External Fallback URL</p>
+                      ) : (
+                        <p className="text-slate-500 mt-1">Specification sheet not available</p>
+                      )}
+                    </div>
+                    {(specSheet?.available || specSheet?.external_url) ? (
+                      <div className="pt-2">
+                        <a
+                          href={buildAssetUrl(specSheet.available ? specSheet.url : specSheet.external_url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-cyan-400/30 text-cyan-300 hover:bg-blue-600 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          <span>Open PDF Specification</span>
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ) : webDiscovery?.specification_sheet ? (
+                      <div className="pt-2">
+                        <a
+                          href={buildAssetUrl(webDiscovery.specification_sheet)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-cyan-400/30 text-cyan-300 hover:bg-blue-600 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          <span>Open PDF Specification</span>
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* User Manual */}
+                  <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-1.5 flex flex-col justify-between">
+                    <div>
+                      <p className="text-slate-400 font-semibold">User Manual</p>
+                      {manualAsset?.available ? (
+                        <p className="text-slate-300 font-mono text-[11px] break-all mt-1">
+                          {manualAsset.url ? manualAsset.url.split('/').pop() : 'manual.pdf'}
+                        </p>
+                      ) : manualAsset?.external_url ? (
+                        <p className="text-slate-300 font-mono text-[11px] break-all mt-1">External Fallback URL</p>
+                      ) : (
+                        <p className="text-slate-500 mt-1">Not found</p>
+                      )}
+                    </div>
+                    {(manualAsset?.available || manualAsset?.external_url) ? (
+                      <div className="pt-2">
+                        <a
+                          href={buildAssetUrl(manualAsset.available ? manualAsset.url : manualAsset.external_url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-cyan-400/30 text-cyan-300 hover:bg-blue-600 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          <span>Open User Manual</span>
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ) : webDiscovery?.manual ? (
+                      <div className="pt-2">
+                        <a
+                          href={buildAssetUrl(webDiscovery.manual)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-cyan-400/30 text-cyan-300 hover:bg-blue-600 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          <span>Open User Manual</span>
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Empty grid cell to keep balance if needed */}
+                  <div className="p-3 rounded-xl bg-transparent border border-transparent hidden sm:block" />
+
+                  {/* Product Image Asset */}
+                  {prodImg ? (
+                    (prodImg.available || prodImg.external_url) ? (
+                      <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                        <p className="text-slate-400 font-semibold">Product Image Asset</p>
+                        <div className="mt-2 flex flex-col md:flex-row gap-4 items-center">
+                          <img
+                            src={buildAssetUrl(prodImg.available ? prodImg.url : prodImg.external_url)}
+                            alt="Discovered product main view"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const sibling = e.currentTarget.nextElementSibling;
+                              if (sibling) {
+                                sibling.classList.remove('hidden');
+                              }
+                            }}
+                            className="w-32 h-32 object-cover rounded-xl border border-blue-500/20 shadow-md cursor-zoom-in"
+                            onClick={() => setSelectedImageModal(prodImg.available ? prodImg.url : prodImg.external_url)}
+                          />
+                          <div className="hidden text-[11px] text-slate-500 italic p-4 rounded-xl bg-slate-900 border border-slate-800" style={{ minWidth: '128px', minHeight: '128px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            Image Failed to Load
+                          </div>
+                          <div className="text-xs space-y-1">
+                            <p className="text-slate-300 font-mono select-all font-semibold">
+                              {prodImg.available ? (prodImg.url ? prodImg.url.split('/').pop() : 'product.jpg') : 'External Fallback Image'}
+                            </p>
+                            <a
+                              href={buildAssetUrl(prodImg.available ? prodImg.url : prodImg.external_url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-400 hover:underline inline-flex items-center gap-1 mt-1 cursor-pointer"
+                            >
+                              <span>Open Direct Image URL</span>
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                        <p className="text-slate-400 font-semibold">Product Image Asset</p>
+                        <p className="text-slate-500 mt-1">Product image not available</p>
+                      </div>
+                    )
+                  ) : webDiscovery?.product_image ? (
+                    <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                      <p className="text-slate-400 font-semibold">Product Image Asset</p>
+                      <div className="mt-2 flex flex-col md:flex-row gap-4 items-center">
+                        <img
+                          src={buildAssetUrl(webDiscovery.product_image)}
+                          alt="Discovered product main view"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const sibling = e.currentTarget.nextElementSibling;
+                            if (sibling) {
+                              sibling.classList.remove('hidden');
+                            }
+                          }}
+                          className="w-32 h-32 object-cover rounded-xl border border-blue-500/20 shadow-md cursor-zoom-in"
+                          onClick={() => setSelectedImageModal(webDiscovery.product_image)}
+                        />
+                        <div className="hidden text-[11px] text-slate-500 italic p-4 rounded-xl bg-slate-900 border border-slate-800" style={{ minWidth: '128px', minHeight: '128px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          Image Failed to Load
+                        </div>
+                        <div className="text-xs space-y-1">
+                          <p className="text-slate-300 font-mono select-all font-semibold">{webDiscovery.product_image}</p>
+                          <a
+                            href={buildAssetUrl(webDiscovery.product_image)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-cyan-400 hover:underline inline-flex items-center gap-1 mt-1 cursor-pointer"
+                          >
+                            <span>Open Direct Image URL</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                      <p className="text-slate-400 font-semibold">Product Image Asset</p>
+                      <p className="text-slate-500">Product image not available</p>
+                    </div>
+                  )}
+
+                  {/* Alternate Images Thumbnails */}
+                  {assets?.alternate_images && assets.alternate_images.length > 0 ? (
+                    <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                      <p className="text-slate-400 font-semibold">Alternate Images</p>
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {assets.alternate_images.map((img, index) => (
+                          (img.available || img.external_url) && (
+                            <div
+                              key={index}
+                              onClick={() => setSelectedImageModal(img.available ? img.url : img.external_url)}
+                              className="relative group cursor-zoom-in border border-blue-500/15 hover:border-cyan-400/50 rounded-xl overflow-hidden bg-slate-950 w-20 h-20 transition-all duration-300"
+                            >
+                              <img
+                                src={buildAssetUrl(img.available ? img.url : img.external_url)}
+                                alt={`Alternate view ${index + 1}`}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const sibling = e.currentTarget.nextElementSibling;
+                                  if (sibling) {
+                                    sibling.classList.remove('hidden');
+                                  }
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="hidden text-[8px] text-slate-600 font-semibold p-1 w-full h-full flex items-center justify-center text-center">
+                                No Load
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  ) : webDiscovery?.alternate_images && webDiscovery.alternate_images.length > 0 ? (
+                    <div className="p-3 rounded-xl bg-[#040916] border border-blue-500/10 space-y-2 col-span-1 sm:col-span-2">
+                      <p className="text-slate-400 font-semibold">Alternate Images</p>
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {webDiscovery.alternate_images.map((img, index) => (
+                          <div
+                            key={index}
+                            onClick={() => setSelectedImageModal(img)}
+                            className="relative group cursor-zoom-in border border-blue-500/15 hover:border-cyan-400/50 rounded-xl overflow-hidden bg-slate-950 w-20 h-20 transition-all duration-300"
+                          >
+                            <img
+                              src={buildAssetUrl(img)}
+                              alt={`Alternate view ${index + 1}`}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const sibling = e.currentTarget.nextElementSibling;
+                                if (sibling) {
+                                  sibling.classList.remove('hidden');
+                                }
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="hidden text-[8px] text-slate-600 font-semibold p-1 w-full h-full flex items-center justify-center text-center">
+                              No Load
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -326,7 +794,7 @@ export const ProductDetail: React.FC = () => {
         {/* Tab 6: Raw Data */}
         {activeTab === 'raw' && (
           <div className="p-6 rounded-2xl bg-[#040916] border border-blue-500/20 font-mono text-xs text-cyan-300 overflow-x-auto">
-            <pre>{JSON.stringify(product, null, 2)}</pre>
+            <pre>{JSON.stringify(rawPayload || product, null, 2)}</pre>
           </div>
         )}
       </motion.div>
@@ -389,6 +857,37 @@ export const ProductDetail: React.FC = () => {
                   Close Inspection
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox / Image Modal */}
+      <AnimatePresence>
+        {selectedImageModal && (
+          <div
+            onClick={() => setSelectedImageModal(null)}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-3xl max-h-[85vh] bg-[#081024] border border-blue-500/30 rounded-3xl p-3 shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col items-center"
+            >
+              <button
+                onClick={() => setSelectedImageModal(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 bg-black/60 rounded-full cursor-pointer z-10"
+              >
+                <X size={20} />
+              </button>
+              <img
+                src={buildAssetUrl(selectedImageModal)}
+                alt="Enlarged view"
+                className="max-w-full max-h-[75vh] object-contain rounded-2xl"
+              />
+              <p className="text-xs font-mono text-cyan-300 mt-3.5 select-all">{selectedImageModal}</p>
             </motion.div>
           </div>
         )}

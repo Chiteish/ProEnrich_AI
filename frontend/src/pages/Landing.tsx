@@ -287,7 +287,7 @@ export const Landing: React.FC = () => {
                         {item.dropdown.map((subItem, idx) => (
                           <Link
                             key={idx}
-                            to={subItem.href || '#'}
+                            to={(subItem as any).href || '#'}
                             onClick={() => setOpenDropdown(null)}
                             className="block p-2 rounded-xl hover:bg-blue-600/15 border border-transparent hover:border-blue-500/20 transition-all group"
                           >

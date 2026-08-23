@@ -1,1 +1,50 @@
 department,class_name,fine,classpath
+Abrasives & Surface Prep,Abrasive Belts,Sanding Belts,Abrasives & Surface Prep>Abrasive Belts>Sanding Belts
+Abrasives & Surface Prep,Abrasive Discs,Sanding Discs,Abrasives & Surface Prep>Abrasive Discs>Sanding Discs
+Abrasives & Surface Prep,Abrasive Discs,Hook & Loop Discs,Abrasives & Surface Prep>Abrasive Discs>Hook & Loop Discs
+Abrasives & Surface Prep,Abrasive Discs,Film Discs,Abrasives & Surface Prep>Abrasive Discs>Film Discs
+Abrasives & Surface Prep,Abrasive Wheels,Cut-Off Wheels,Abrasives & Surface Prep>Abrasive Wheels>Cut-Off Wheels
+Abrasives & Surface Prep,Abrasive Wheels,Grinding Wheels,Abrasives & Surface Prep>Abrasive Wheels>Grinding Wheels
+Abrasives & Surface Prep,Abrasive Wheels,Metal Cut-Off Discs,Abrasives & Surface Prep>Abrasive Wheels>Metal Cut-Off Discs
+Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Appliances & Consumer Electronics>Kitchen Appliances>Built-In Dishwashers
+Appliances & Consumer Electronics,Kitchen Appliances,Dishwashers,Appliances & Consumer Electronics>Kitchen Appliances>Dishwashers
+Appliances & Consumer Electronics,Laundry Appliances,Electric Dryers,Appliances & Consumer Electronics>Laundry Appliances>Electric Dryers
+Appliances & Consumer Electronics,Laundry Appliances,Gas Dryers,Appliances & Consumer Electronics>Laundry Appliances>Gas Dryers
+Appliances & Consumer Electronics,Laundry Appliances,Washers,Appliances & Consumer Electronics>Laundry Appliances>Washers
+Appliances & Consumer Electronics,Laundry Appliances,Laundry Centers,Appliances & Consumer Electronics>Laundry Appliances>Laundry Centers
+Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Lighting & Electrical>Lamps & Bulbs>LED Bulbs
+Lighting & Electrical,Lamps & Bulbs,Fluorescent Bulbs,Lighting & Electrical>Lamps & Bulbs>Fluorescent Bulbs
+Lighting & Electrical,Lamps & Bulbs,High Intensity Discharge,Lighting & Electrical>Lamps & Bulbs>High Intensity Discharge
+Lighting & Electrical,Lamps & Bulbs,Strip Lights,Lighting & Electrical>Lamps & Bulbs>Strip Lights
+Lighting & Electrical,Light Fixtures,Ceiling Fixtures,Lighting & Electrical>Light Fixtures>Ceiling Fixtures
+Lighting & Electrical,Light Fixtures,Recessed Lighting,Lighting & Electrical>Light Fixtures>Recessed Lighting
+Lighting & Electrical,Ceiling Fans,Ceiling Fans,Lighting & Electrical>Ceiling Fans>Ceiling Fans
+Lighting & Electrical,Wiring Devices,Outlets & Receptacles,Lighting & Electrical>Wiring Devices>Outlets & Receptacles
+Lighting & Electrical,Wiring Devices,Switches,Lighting & Electrical>Wiring Devices>Switches
+Lighting & Electrical,Wire & Cable,Electrical Wire,Lighting & Electrical>Wire & Cable>Electrical Wire
+Lighting & Electrical,Wire & Cable,Extension Cords,Lighting & Electrical>Wire & Cable>Extension Cords
+Power Tools,Grinders & Cutters,Angle Grinders,Power Tools>Grinders & Cutters>Angle Grinders
+Power Tools,Drills & Drivers,Drill Bits,Power Tools>Drills & Drivers>Drill Bits
+Power Tools,Saws,Table Saws,Power Tools>Saws>Table Saws
+Power Tools,Saws,Band Saws,Power Tools>Saws>Band Saws
+Power Tools,Sanders,Random Orbital Sanders,Power Tools>Sanders>Random Orbital Sanders
+Power Tools,Fastening Tools,Nail Guns & Nailers,Power Tools>Fastening Tools>Nail Guns & Nailers
+Hand Tools,Screwdrivers,Precision Screwdrivers,Hand Tools>Screwdrivers>Precision Screwdrivers
+Hand Tools,Measuring & Layout,Tape Measures,Hand Tools>Measuring & Layout>Tape Measures
+Hand Tools,Marking & Layout,Marking Tools,Hand Tools>Marking & Layout>Marking Tools
+Hand Tools,Woodworking Tools,Clamps & Jigs,Hand Tools>Woodworking Tools>Clamps & Jigs
+Building Materials,Decking & Railing,Composite Decking,Building Materials>Decking & Railing>Composite Decking
+Building Materials,Decking & Railing,PVC Decking,Building Materials>Decking & Railing>PVC Decking
+Building Materials,Decking & Railing,Deck Railings,Building Materials>Decking & Railing>Deck Railings
+Building Materials,Decking & Railing,Fascia Boards,Building Materials>Decking & Railing>Fascia Boards
+Building Materials,Masonry,Mortar & Concrete,Building Materials>Masonry>Mortar & Concrete
+Building Materials,Drywall,Gypsum Board,Building Materials>Drywall>Gypsum Board
+Building Materials,Doors & Windows,Entry Doors,Building Materials>Doors & Windows>Entry Doors
+Building Materials,Doors & Windows,Skylights,Building Materials>Doors & Windows>Skylights
+Safety & Workwear,Eye Protection,Safety Glasses,Safety & Workwear>Eye Protection>Safety Glasses
+Safety & Workwear,Lighting,Flashlights,Safety & Workwear>Lighting>Flashlights
+Safety & Workwear,Fire Safety,Smoke Detectors,Safety & Workwear>Fire Safety>Smoke Detectors
+Safety & Workwear,Workwear Accessories,Kneeling Pads,Safety & Workwear>Workwear Accessories>Kneeling Pads
+Automotive & Pneumatics,Tire Accessories,Pressure Gauges,Automotive & Pneumatics>Tire Accessories>Pressure Gauges
+Routers & Router Bits,Router Bits,Straight Bits,Routers & Router Bits>Router Bits>Straight Bits
+Routers & Router Bits,Router Bits,Router Bit Sets,Routers & Router Bits>Router Bits>Router Bit Sets

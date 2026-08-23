@@ -181,3 +181,6 @@ export interface Settings {
   notificationsEnabled: boolean;
   exportFormat: 'csv' | 'json';
 }
+
+export * from './enrichment';
+

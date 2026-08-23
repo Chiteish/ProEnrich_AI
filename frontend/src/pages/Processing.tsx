@@ -2,7 +2,7 @@
  * Processing Page - Clean Dark Cyber Aesthetic
  */
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import type { ProcessingJob } from '../types';
 import { processingService } from '../services/processingService';
@@ -22,34 +22,49 @@ import { motion } from 'framer-motion';
 
 export const Processing: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [job, setJob] = useState<ProcessingJob | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const activeJobId = searchParams.get('jobId') || localStorage.getItem('activeJobId');
+    if (!activeJobId) {
+      setLoading(false);
+      return;
+    }
+
+    let intervalId: any = null;
+
     const fetchJob = async () => {
       try {
-        const result = await processingService.getJobStatus('job-001');
+        const result = await processingService.getJobStatus(activeJobId);
         setJob(result);
 
-        const interval = setInterval(async () => {
-          const updated = await processingService.getJobStatus('job-001');
-          setJob(updated);
+        intervalId = setInterval(async () => {
+          try {
+            const updated = await processingService.getJobStatus(activeJobId);
+            setJob(updated);
 
-          if (updated.status === 'completed') {
-            clearInterval(interval);
+            if (updated.status === 'completed' || updated.status === 'failed') {
+              clearInterval(intervalId);
+            }
+          } catch (intervalErr) {
+            console.error('Failed to update job status inside interval:', intervalErr);
           }
         }, 2500);
-
-        return () => clearInterval(interval);
       } catch (error) {
-        console.error('Failed to fetch job status:', error);
+        console.error('Failed to fetch job status on mount:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchJob();
-  }, []);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [searchParams]);
 
   if (loading) {
     return (
@@ -83,7 +98,7 @@ export const Processing: React.FC = () => {
     );
   }
 
-  const percentage = Math.round((job.processedProducts / job.totalProducts) * 100);
+  const percentage = job.totalProducts > 0 ? Math.round((job.processedProducts / job.totalProducts) * 100) : 0;
 
   return (
     <MainLayout>

@@ -5,6 +5,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { processingService } from '../services/processingService';
+import { productService } from '../services/productService';
 import { mockProducts } from '../mock/products';
 import {
   Upload,
@@ -115,17 +116,23 @@ export const Ingest: React.FC = () => {
           previewData = generateMockFilePreview(file.name, file.size);
         }
 
-        setTimeout(() => {
-          setUploadProgress(85);
-          setUploadStage('Validating SKU schema compatibility...');
-        }, 400);
+        setUploadProgress(70);
+        setUploadStage('Uploading catalog to secure backend...');
 
-        setTimeout(() => {
+        productService.uploadFile(file).then((uploadRes) => {
+          previewData.fileId = uploadRes.fileId;
           setUploadProgress(100);
           setUploadStage('Ingestion validation complete!');
           setFilePreview(previewData);
           setLoading(false);
-        }, 800);
+        }).catch((err) => {
+          console.error('Backend upload failed, using client fallback:', err);
+          previewData.fileId = 'file-' + Date.now();
+          setUploadProgress(100);
+          setUploadStage('Ingestion validation complete (client preview mode)!');
+          setFilePreview(previewData);
+          setLoading(false);
+        });
       } catch (err: any) {
         console.error('Parsing error:', err);
         setErrorMessage('Could not parse file. Loaded fallback industrial dataset.');
@@ -219,11 +226,13 @@ export const Ingest: React.FC = () => {
     if (!filePreview) return;
     setProcessing(true);
     try {
+      localStorage.setItem('activeJobId', filePreview.fileId);
       await processingService.startProcessing(filePreview.fileId);
-      navigate('/processing');
+      navigate(`/processing?jobId=${filePreview.fileId}`);
     } catch (error) {
       console.error('Failed to start processing:', error);
-      navigate('/processing');
+      localStorage.setItem('activeJobId', filePreview.fileId);
+      navigate(`/processing?jobId=${filePreview.fileId}`);
     }
   };
 

@@ -144,6 +144,33 @@ test("RAG Integration Suite", async (t) => {
         assert.strictEqual(body.message, "RAG service returned an error");
     });
 
+    t.test("TEST 6b: RAG service returns HTTP 404", async (t) => {
+        t.mock.method(axios, "post", async () => {
+            const err = new Error("Request failed with status code 404");
+            err.response = {
+                status: 404,
+                data: "Not Found"
+            };
+            throw err;
+        });
+
+        const response = await fetch(backendUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                mpn: "PDSH4816AF",
+                manufacturer: "Frigidaire",
+                description: "Built-in Dishwasher",
+                missing_attributes: ["HEIGHT"]
+            })
+        });
+
+        assert.strictEqual(response.status, 404);
+        const body = await response.json();
+        assert.strictEqual(body.error, "RAG_SERVICE_ERROR");
+        assert.strictEqual(body.message, "RAG service returned an error");
+    });
+
     t.test("TEST 7: Missing required fields (HTTP 400)", async (t) => {
         const response = await fetch(backendUrl, {
             method: "POST",
@@ -180,5 +207,35 @@ test("RAG Integration Suite", async (t) => {
         } finally {
             process.env.RAG_SERVICE_URL = originalUrl;
         }
+    });
+
+    t.test("TEST 9: Retrieve image asset successfully", async (t) => {
+        const assetsUrl = `http://localhost:${port}/api/ai/assets/FRIGIDAIRE_PDSH4816AF.jpg`;
+        const response = await fetch(assetsUrl);
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.headers.get("content-type"), "image/jpeg");
+    });
+
+    t.test("TEST 10: Retrieve PDF asset successfully", async (t) => {
+        const assetsUrl = `http://localhost:${port}/api/ai/assets/FRIGIDAIRE_PDSH4816AF_Specification_Sheet.pdf`;
+        const response = await fetch(assetsUrl);
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.headers.get("content-type"), "application/pdf");
+    });
+
+    t.test("TEST 11: Non-existent asset returns 404", async (t) => {
+        const assetsUrl = `http://localhost:${port}/api/ai/assets/non_existent_file.jpg`;
+        const response = await fetch(assetsUrl);
+        assert.strictEqual(response.status, 404);
+        const body = await response.json();
+        assert.strictEqual(body.error, "NOT_FOUND");
+    });
+
+    t.test("TEST 12: Directory traversal attempt blocked (HTTP 400/403)", async (t) => {
+        const assetsUrl = `http://localhost:${port}/api/ai/assets/..%2f..%2fpackage.json`;
+        const response = await fetch(assetsUrl);
+        assert.strictEqual(response.status, 400); // Because '..' doesn't match our allowed pattern
+        const body = await response.json();
+        assert.strictEqual(body.error, "BAD_REQUEST");
     });
 });

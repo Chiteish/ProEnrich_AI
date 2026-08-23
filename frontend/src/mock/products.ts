@@ -174,6 +174,23 @@ export const mockProducts: Product[] = [
     createdAt: '2024-08-06T09:00:00Z',
     updatedAt: '2024-08-15T05:15:00Z',
   },
+  {
+    id: 'prod-011',
+    mfrPartNum: 'PDSH4816AF',
+    description: 'Built-in Dishwasher',
+    manufacturer: 'Frigidaire',
+    brand: 'Frigidaire',
+    department: 'Appliances',
+    class: 'Kitchen Appliances',
+    fine: 'Built-In Dishwashers',
+    completeness: 50,
+    confidence: 60,
+    status: 'review',
+    inputFields: 6,
+    outputFields: 252,
+    createdAt: '2026-08-22T10:00:00Z',
+    updatedAt: '2026-08-22T10:00:00Z',
+  },
 ];
 
 export const mockProductAttributes: ProductAttribute[] = [

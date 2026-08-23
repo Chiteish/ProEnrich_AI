@@ -299,3 +299,65 @@ def test_web_loader_image_filtering():
     assert "favicon.ico" not in meta["alternate_images"]
     assert "banner.jpg" not in meta["alternate_images"]
 
+
+def test_web_loader_search_timeout_handling():
+    mock_session = mock.Mock()
+    mock_session.get.side_effect = requests.Timeout("DuckDuckGo request timed out")
+    mock_session.headers = {}
+
+    loader = WebLoader(session=mock_session)
+    links = loader.search_product("PDSH4816AF", "Frigidaire")
+    
+    assert "html.duckduckgo.com" in loader.failed_search_domains
+    assert links == []
+
+
+def test_web_loader_failed_url_deduplication():
+    mock_session = mock.Mock()
+    mock_session.get.side_effect = requests.Timeout("Fetch timed out")
+    mock_session.headers = {}
+
+    loader = WebLoader(session=mock_session)
+    
+    res1 = loader._fetch_single_url("https://example.com/failed-page", "MPN", "MFR")
+    assert "error" in res1
+    assert "https://example.com/failed-page" in loader.failed_urls
+
+    mock_session.get.reset_mock()
+
+    res2 = loader._fetch_single_url("https://example.com/failed-page", "MPN", "MFR")
+    assert res2 == {"error": "previously_failed"}
+    mock_session.get.assert_not_called()
+
+
+def test_web_loader_partial_enrichment_when_search_fails_e2e():
+    mock_session = mock.Mock()
+    mock_session.get.side_effect = requests.Timeout("Search is down")
+    mock_session.headers = {}
+
+    loader = WebLoader(session=mock_session)
+    result = loader.discover_and_load(
+        mpn="PDSH4816AF",
+        manufacturer="Frigidaire",
+        candidate_urls=["https://www.frigidaire.com/failed-page"]
+    )
+    
+    assert result["documents"] == []
+    assert result["specification_sheet"] is None
+    assert result["manual"] is None
+
+
+def test_web_loader_bounded_retry_behavior():
+    mock_session = mock.Mock()
+    mock_resp = mock.Mock()
+    mock_resp.status_code = 200
+    mock_resp.text = "<html><body>Results</body></html>"
+    mock_session.get.return_value = mock_resp
+    mock_session.headers = {}
+
+    loader = WebLoader(session=mock_session)
+    loader.search_product("PDSH4816AF", "Frigidaire")
+    
+    assert mock_session.get.call_count <= 4
+
+
