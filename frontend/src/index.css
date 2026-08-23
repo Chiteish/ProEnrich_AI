@@ -1,0 +1,99 @@
+/* src/index.css */
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: #030712;
+    --bg-secondary: #060d1f;
+    --bg-surface: #0a1329;
+    --bg-card: rgba(10, 19, 41, 0.75);
+    --border-subtle: rgba(59, 130, 246, 0.15);
+    --border-bright: rgba(59, 130, 246, 0.35);
+    --accent-blue: #2563eb;
+    --accent-cyan: #38bdf8;
+    --accent-glow: rgba(37, 99, 235, 0.4);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+
+  body {
+    background-color: #030712;
+    color: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Glassmorphism & Glow Effects */
+.glass-panel {
+  background: rgba(10, 19, 41, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+}
+
+.glass-panel-glow {
+  background: rgba(8, 16, 36, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.85), 0 0 35px -5px rgba(37, 99, 235, 0.25);
+}
+
+.glass-card {
+  background: rgba(11, 22, 48, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card:hover {
+  background: rgba(15, 29, 64, 0.75);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.glow-btn {
+  box-shadow: 0 0 25px rgba(37, 99, 235, 0.5);
+  transition: all 0.25s ease;
+}
+
+.glow-btn:hover {
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.7);
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Pulse animation for active node */
+@keyframes activePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7), 0 0 15px rgba(56, 189, 248, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0), 0 0 25px rgba(56, 189, 248, 1);
+  }
+}
+
+.animate-pipeline-active {
+  animation: activePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

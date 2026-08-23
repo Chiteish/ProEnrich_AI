@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pymupdf
+sentence-transformers
+faiss-cpu
+numpy
+pydantic
+python-multipart
+requests
+beautifulsoup4
+pytest

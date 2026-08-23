@@ -5,7 +5,7 @@ from app.agents.product_understanding import ProductUnderstanding
 from app.agents.attribute_extraction import AttributeExtractor
 from app.agents.entity_resolution import EntityResolver
 from app.services.taxonomy_service import TaxonomyService
-from app.services.missing_attribute_service import (MissingAttributeService)
+from app.services.missing_attribute_service import MissingAttributeService
 from app.services.query_builder import ProductQueryBuilder
 from app.services.evidence_service import EvidenceService
 
@@ -48,12 +48,12 @@ async def process_product(
 
     understanding = (
         understanding_agent
-        .analyze(request.part_desc)
+        .analyze(request.part_desc, request.part_manuf or "")
     )
 
     attributes = (
         attribute_extractor
-        .extract(understanding)
+        .extract(understanding, request.part_desc)
     )
 
     manufacturer = (
@@ -76,10 +76,27 @@ async def process_product(
         )
     )
 
+    # Fallback for brand: if brand resolution gave None/placeholder, try brand extracted from part_desc
+    if not brand.get("canonical_value") and understanding.get("brand"):
+        extracted_brand_res = entity_resolver.resolve(
+            understanding["brand"],
+            "brand"
+        )
+        if extracted_brand_res.get("canonical_value"):
+            brand = extracted_brand_res
+        else:
+            brand = {
+                "raw_value": understanding["brand"],
+                "canonical_value": understanding["brand"],
+                "confidence": 0.85,
+                "method": "description_extraction"
+            }
+
     classification = (
         taxonomy_service
         .find_match(
-            understanding.get("product_type","") or ""
+            product_type=understanding.get("product_type", "") or "",
+            description=request.part_desc
         )
     )
 

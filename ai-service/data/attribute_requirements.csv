@@ -1,5 +1,45 @@
 product_type,department,class_name,fine,attribute_name,required
-sanding belt,,,,Dimension,true
-sanding belt,,,,Pack Quantity,true
-sanding belt,,,,Grit,true
-sanding belt,,,,Material,true
+sanding belt,Abrasives & Surface Prep,Abrasive Belts,Sanding Belts,Dimension,true
+sanding belt,Abrasives & Surface Prep,Abrasive Belts,Sanding Belts,Grit,true
+sanding belt,Abrasives & Surface Prep,Abrasive Belts,Sanding Belts,Pack Quantity,true
+sanding belt,Abrasives & Surface Prep,Abrasive Belts,Sanding Belts,Material,true
+sanding disc,Abrasives & Surface Prep,Abrasive Discs,Sanding Discs,Diameter,true
+sanding disc,Abrasives & Surface Prep,Abrasive Discs,Sanding Discs,Grit,true
+sanding disc,Abrasives & Surface Prep,Abrasive Discs,Sanding Discs,Pack Quantity,true
+sanding disc,Abrasives & Surface Prep,Abrasive Discs,Sanding Discs,Hole Pattern,false
+cut-off disc,Abrasives & Surface Prep,Abrasive Wheels,Cut-Off Wheels,Diameter,true
+cut-off disc,Abrasives & Surface Prep,Abrasive Wheels,Cut-Off Wheels,Thickness,true
+cut-off disc,Abrasives & Surface Prep,Abrasive Wheels,Cut-Off Wheels,Arbor Size,true
+cut-off disc,Abrasives & Surface Prep,Abrasive Wheels,Cut-Off Wheels,Application,true
+grinding wheel,Abrasives & Surface Prep,Abrasive Wheels,Grinding Wheels,Diameter,true
+grinding wheel,Abrasives & Surface Prep,Abrasive Wheels,Grinding Wheels,Thickness,true
+grinding wheel,Abrasives & Surface Prep,Abrasive Wheels,Grinding Wheels,Arbor Size,true
+grinding wheel,Abrasives & Surface Prep,Abrasive Wheels,Grinding Wheels,Application,true
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Voltage Rating,true
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Amperage Rating,true
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Mounting Type,true
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Sound Level,true
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Number of Wash Cycles,false
+dishwasher,Appliances & Consumer Electronics,Kitchen Appliances,Built-In Dishwashers,Material,false
+dryer,Appliances & Consumer Electronics,Laundry Appliances,Electric Dryers,Fuel Type,true
+dryer,Appliances & Consumer Electronics,Laundry Appliances,Electric Dryers,Voltage Rating,true
+dryer,Appliances & Consumer Electronics,Laundry Appliances,Electric Dryers,Drum Capacity,false
+washer,Appliances & Consumer Electronics,Laundry Appliances,Washers,Drum Capacity,false
+led bulb,Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Wattage,true
+led bulb,Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Lumens,false
+led bulb,Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Color Temperature,true
+led bulb,Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Base Type,true
+led bulb,Lighting & Electrical,Lamps & Bulbs,LED Bulbs,Pack Quantity,false
+fluorescent bulb,Lighting & Electrical,Lamps & Bulbs,Fluorescent Bulbs,Wattage,true
+fluorescent bulb,Lighting & Electrical,Lamps & Bulbs,Fluorescent Bulbs,Color Temperature,true
+fluorescent bulb,Lighting & Electrical,Lamps & Bulbs,Fluorescent Bulbs,Base Type,true
+ceiling fan,Lighting & Electrical,Ceiling Fans,Ceiling Fans,Blade Span,true
+ceiling fan,Lighting & Electrical,Ceiling Fans,Ceiling Fans,Number of Blades,false
+ceiling fan,Lighting & Electrical,Ceiling Fans,Ceiling Fans,Motor Type,false
+drill bit,Power Tools,Drills & Drivers,Drill Bits,Diameter,true
+drill bit,Power Tools,Drills & Drivers,Drill Bits,Length,true
+drill bit,Power Tools,Drills & Drivers,Drill Bits,Shank Type,true
+drill bit,Power Tools,Drills & Drivers,Drill Bits,Material,false
+router bit,Routers & Router Bits,Router Bits,Straight Bits,Diameter,true
+router bit,Routers & Router Bits,Router Bits,Straight Bits,Shank Size,true
+router bit,Routers & Router Bits,Router Bits,Straight Bits,Cutting Length,false
